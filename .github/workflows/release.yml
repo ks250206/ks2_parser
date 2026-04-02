@@ -1,0 +1,81 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            label: macOS Apple Silicon
+            archive_suffix: apple-silicon-mac
+            binary_name: ks2_parser
+          - os: macos-13
+            label: macOS Intel
+            archive_suffix: intel-mac
+            binary_name: ks2_parser
+          - os: windows-latest
+            label: Windows x64
+            archive_suffix: windows-x64
+            binary_name: ks2_parser.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set archive name
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="manual-${GITHUB_RUN_NUMBER}"
+          fi
+          echo "ARCHIVE_NAME=ks2_parser-${version}-${{ matrix.archive_suffix }}.zip" >> "${GITHUB_ENV}"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Prepare archive directory
+        shell: bash
+        run: |
+          mkdir -p dist/ks2_parser
+          cp "target/release/${{ matrix.binary_name }}" dist/ks2_parser/
+          cp config.toml dist/ks2_parser/
+
+      - name: Create zip archive on macOS
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent dist/ks2_parser "dist/${ARCHIVE_NAME}"
+
+      - name: Create zip archive on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/ks2_parser -DestinationPath "dist/$env:ARCHIVE_NAME" -Force
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVE_NAME }}
+          path: dist/${{ env.ARCHIVE_NAME }}
+
+      - name: Upload release asset
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ env.ARCHIVE_NAME }}
