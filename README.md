@@ -23,12 +23,29 @@ raw / ADConverterScale * ADRangeCoefficient * ADCoefficient * 各chのcoefficien
 cargo run
 ```
 
+## GitHub Release
+
+`.github/workflows/release.yml` により、`v*` 形式のタグを push すると GitHub Actions が以下の zip を Release に添付します。
+
+- Apple Silicon Mac 向け
+- Intel Mac 向け
+- Windows 64bit 向け
+
+各 zip には実行ファイルと `config.toml` が含まれます。
+
+例:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## config.toml
 
 例:
 
 ```toml
-input_path = "Test0006.ks2"
+input_path = "Test0029.ks2"
 output_dir = "out"
 output_file_name = "result.csv"
 auto_detect_offsets = true
