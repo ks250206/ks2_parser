@@ -37,7 +37,7 @@ header_byte = 256
 variable_header_byte = 2890
 data_header_byte = 13452
 data_skip_byte = 12
-footer_byte = 0
+footer_byte = 28
 
 values_per_record = 4
 endianness = "little"
